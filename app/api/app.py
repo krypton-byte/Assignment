@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Annotated, List, Optional
 from fastapi import FastAPI, Form, Request
+from fastapi.responses import RedirectResponse
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
@@ -22,9 +23,11 @@ from ..models.db_task import History, TasksActivity
 app = FastAPI()
 
 
-@app.get("/")
-async def home():
-    return "Hello World"
+@app.route("/")
+async def home(_: Request):
+    return RedirectResponse(
+        "/docs"
+    )
 
 @app.get('/task/{task_id}', response_model=TaskResponse)
 async def get_task(task_id: int):
