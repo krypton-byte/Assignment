@@ -61,7 +61,12 @@ class TasksActivity(Model):
     created_by = fields.CharField(max_length=255, source_field="CreatedBy")
     created_on = fields.DatetimeField(auto_now=True, source_field="CreatedOn")
 
-    def to_model(self):
+    def to_model(self) -> TasksActivityModel:
+        """Converts TasksActivity instance to TasksActivityModel.
+
+        :return: Converted TasksActivityModel instance
+        :rtype: TasksActivityModel
+        """    
         return TasksActivityModel(
             task_id=self.task_id,
             task_name=self.task_name,
@@ -99,7 +104,7 @@ class TasksActivity(Model):
         )
 
 
-class History(Model):
+class History(Model):    
     class Meta:  # type: ignore
         table = "History"
 
@@ -108,8 +113,12 @@ class History(Model):
     action = fields.CharEnumField(HistoryActionType)
     description = fields.TextField()
     time = fields.DatetimeField(auto_now=True)
+    def to_model(self) -> HistoryModel:
+        """Converts History instance to HistoryModel.
 
-    def to_model(self):
+        :return: Converted HistoryModel instance
+        :rtype: HistoryModel
+        """
         return HistoryModel(
             id=self.id,
             task_id=self.task_id,
@@ -120,6 +129,13 @@ class History(Model):
 
 
 async def InitializeDB():
+    """Initialize Tortoise ORM.
+
+    This function initializes Tortoise ORM with SQLite database connection
+    and generates schemas based on specified models.
+
+    :return: None
+    """
     await Tortoise.init(
         db_url="sqlite://db.sqlite3",
         modules={"models": ["app.models.db_task"]},

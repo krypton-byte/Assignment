@@ -15,6 +15,7 @@ class SubCategoryName(Enum):
     CUSTOMER_CONTACT = "customer contact"
     PARTNER_CONTACT = "partner contact"
     EMPLOYEE_CONTACT = "emplopyee contact"
+    
 
 
 class GroupName(Enum):

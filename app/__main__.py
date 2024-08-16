@@ -12,6 +12,13 @@ parse = args.parse_args()
 
 
 def start():
+    """Starts the FastAPI application using Uvicorn.
+
+    This function runs the FastAPI application with auto-reload enabled,
+    using environment variables for host and port configuration.
+
+    If HOST and PORT environment variables are not set, defaults to 0.0.0.0:8000.
+    """
     uvicorn.run(
         "app:app",
         reload=True,
