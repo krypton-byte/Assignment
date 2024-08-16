@@ -46,6 +46,13 @@ poetry run app
 python -m app run
 ```
 
+## Proper Example HTTP Request to webhook
+```bash
+> curl -X POST http://127.0.0.1:8000/webhook \
+-H "Content-Type: application/json" \
+-d '{"task_id":1, "task_name": "new task name", "action_type": "test action", "dummy": "hello world"}'
+
+```
 ## Additional Information
 
 - Make sure to configure your database settings appropriately in the project before running migrations.

@@ -1,4 +1,3 @@
-from pydantic import ClickHouseDsn
 from tortoise import Model, Tortoise, fields, run_async
 from .enum import (
     ActivityName,
@@ -10,43 +9,57 @@ from .enum import (
     Status,
 )
 from .task import HistoryModel, TasksActivityModel
-# from tortoise.fields.data import CharEnumType
 
 
 class TasksActivity(Model):
-    task_id = fields.IntField(primary_key=True)
-    task_name = fields.TextField()
-    task_description = fields.TextField()
-    activity_type_id = fields.IntField()
-    activity_type_name = fields.CharEnumField(ActivityName)
-    activity_group_sub_category_id = fields.IntField()
-    activity_group_sub_category_name = fields.CharEnumField(SubCategoryName)
-    activity_group_id = fields.IntField()
-    activity_group_name = fields.CharEnumField(GroupName)
-    stage_id = fields.IntField()
-    stage_name = fields.CharEnumField(StageName)
-    core_group_category_id = fields.IntField()
-    core_group_category = fields.CharEnumField(GroupCategory)
-    core_group_id = fields.IntField()
-    core_group_name = fields.TextField()
-    due_date = fields.DateField()
-    action_type = fields.CharField(max_length=255)
-    related_to = fields.CharField(max_length=255)
-    related_to_picture_id = fields.IntField()
-    related_to_email = fields.CharField(max_length=255)
-    related_to_company = fields.CharField(max_length=255)
-    assign_to = fields.CharField(max_length=255)
-    assign_to_picture_id = fields.IntField()
-    assign_to_email = fields.CharField(max_length=255)
-    assign_to_company = fields.CharField(max_length=255)
-    notes = fields.TextField()
-    status = fields.CharEnumField(Status)
-    attachment_id = fields.IntField()
-    attachments = fields.CharField(max_length=255)
-    link_object_id = fields.IntField()
-    link_response_id = fields.IntField()
-    created_by = fields.CharField(max_length=255)
-    created_on = fields.DatetimeField(auto_now=True)
+    class Meta:  # type: ignore
+        table = "TasksActivity"
+
+    task_id = fields.IntField(primary_key=True, source_field="TaskID")
+    task_name = fields.TextField(source_field="task_name")
+    task_description = fields.TextField(source_field="TaskDescription")
+    activity_type_id = fields.IntField(source_field="ActivityTypeID")
+    activity_type_name = fields.CharEnumField(
+        ActivityName, source_field="ActivityTypeName"
+    )
+    activity_group_sub_category_id = fields.IntField(
+        source_field="ActivityGroupSubCategoryId"
+    )
+    activity_group_sub_category_name = fields.CharEnumField(
+        SubCategoryName, source_field="ActivityGroupSubCategoryName"
+    )
+    activity_group_id = fields.IntField(source_field="ActivityGroupID")
+    activity_group_name = fields.CharEnumField(
+        GroupName, source_field="ActivityGroupName"
+    )
+    stage_id = fields.IntField(source_field="StageID")
+    stage_name = fields.CharEnumField(StageName, source_field="StageName")
+    core_group_category_id = fields.IntField(source_field="CoreGroupCategoryID")
+    core_group_category = fields.CharEnumField(
+        GroupCategory, source_field="CoreGroupCategory"
+    )
+    core_group_id = fields.IntField(source_field="CoreGroupID")
+    core_group_name = fields.TextField(source_field="CoreGroupName")
+    due_date = fields.DateField(source_field="DueDate")
+    action_type = fields.CharField(max_length=255, source_field="ActionType")
+    related_to = fields.CharField(max_length=255, source_field="RelatedTo")
+    related_to_picture_id = fields.IntField(source_field="RelatedToPictureID")
+    related_to_email = fields.CharField(max_length=255, source_field="RelatedToEmail")
+    related_to_company = fields.CharField(
+        max_length=255, source_field="RelatedToCompany"
+    )
+    assign_to = fields.CharField(max_length=255, source_field="AssignTo")
+    assign_to_picture_id = fields.IntField(source_field="AssignToPictureID")
+    assign_to_email = fields.CharField(max_length=255, source_field="AssignToEmail")
+    assign_to_company = fields.CharField(max_length=255, source_field="AssignToCompany")
+    notes = fields.TextField(source_field="Notes")
+    status = fields.CharEnumField(Status, source_field="Status")
+    attachment_id = fields.IntField(source_field="AttachmentID")
+    attachments = fields.CharField(max_length=255, source_field="Attachments")
+    link_object_id = fields.IntField(source_field="LinkObjectID")
+    link_response_id = fields.IntField(source_field="LinkResponseID")
+    created_by = fields.CharField(max_length=255, source_field="CreatedBy")
+    created_on = fields.DatetimeField(auto_now=True, source_field="CreatedOn")
 
     def to_model(self):
         return TasksActivityModel(
@@ -87,19 +100,24 @@ class TasksActivity(Model):
 
 
 class History(Model):
+    class Meta:  # type: ignore
+        table = "History"
+
     id = fields.IntField(primary_key=True)
     task_id = fields.IntField()
     action = fields.CharEnumField(HistoryActionType)
     description = fields.TextField()
     time = fields.DatetimeField(auto_now=True)
+
     def to_model(self):
         return HistoryModel(
             id=self.id,
             task_id=self.task_id,
             action=self.action,
             time=self.time,
-            description=self.description
+            description=self.description,
         )
+
 
 async def InitializeDB():
     await Tortoise.init(

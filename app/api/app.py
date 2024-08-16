@@ -1,10 +1,10 @@
-from datetime import date, datetime
+from datetime import date
 from typing import Annotated, List, Optional
 from fastapi import FastAPI, Form, Request
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
-from app.api.responses import DeleteStatus, UpdateStatus, UpdateWebhookStatus
+from app.api.responses import CreateTaskResponse, DeleteStatus, TaskResponse, UpdateStatus, UpdateWebhookStatus
 
 from ..models.task import HistoryModel, TasksActivityModel
 from ..models.enum import (
@@ -26,8 +26,21 @@ app = FastAPI()
 async def home():
     return "Hello World"
 
+@app.get('/task/{task_id}', response_model=TaskResponse)
+async def get_task(task_id: int):
+    task = await TasksActivity.filter(task_id=task_id).first()
+    if task:
+        return TaskResponse(
+            success=True,
+            message='Task Fetched Successfully',
+            data=task.to_model()
+        )
+    return TaskResponse(
+        success=False,
+        message='Task Not Found'
+    )
 
-@app.post("/tasks-activity", response_model=TasksActivityModel)
+@app.post("/tasks-activity", response_model=CreateTaskResponse)
 async def create_task_activity(
     task_name: Annotated[str, Form()],
     task_description: Annotated[str, Form()],
@@ -61,65 +74,64 @@ async def create_task_activity(
     link_object_id: Annotated[int, Form()],
     created_by: Annotated[str, Form()],
 ):
-    task_activity = await TasksActivity.create(
-        task_name=task_name,
-        task_description=task_description,
-        activity_type_id=activity_type_id,
-        activity_type_name=activity_type_name,
-        activity_group_sub_category_id=activity_group_sub_category_id,
-        activity_group_sub_category_name=activity_group_sub_category_name,
-        activity_group_id=activity_group_id,
-        activity_group_name=activity_group_name,
-        stage_id=stage_id,
-        stage_name=stage_name,
-        core_group_category_id=core_group_category_id,
-        core_group_category=core_group_category,
-        core_group_id=core_group_id,
-        core_group_name=core_group_name,
-        due_date=due_date,
-        action_type=action_type,
-        related_to=related_to,
-        related_to_picture_id=related_to_picture_id,
-        related_to_email=related_to_email,
-        related_to_company=related_to_company,
-        assign_to=assign_to,
-        assign_to_email=assign_to_email,
-        assign_to_picture_id=assign_to_picture_id,
-        assign_to_company=assign_to_company,
-        notes=notes,
-        status=status,
-        attachment_id=attachment_id,
-        attachments=attachments,
-        link_response_id=link_response_id,
-        link_object_id=link_object_id,
-        created_by=created_by,
-    )
-    await History.create(
-        task_id=task_activity.task_id,
-        action=HistoryActionType.CREATE,
-        description=f"Task {task_activity.task_id} was created by user"
-    )
-    return task_activity.to_model()
+    try:
+        task_activity = await TasksActivity.create(
+            task_name=task_name,
+            task_description=task_description,
+            activity_type_id=activity_type_id,
+            activity_type_name=activity_type_name,
+            activity_group_sub_category_id=activity_group_sub_category_id,
+            activity_group_sub_category_name=activity_group_sub_category_name,
+            activity_group_id=activity_group_id,
+            activity_group_name=activity_group_name,
+            stage_id=stage_id,
+            stage_name=stage_name,
+            core_group_category_id=core_group_category_id,
+            core_group_category=core_group_category,
+            core_group_id=core_group_id,
+            core_group_name=core_group_name,
+            due_date=due_date,
+            action_type=action_type,
+            related_to=related_to,
+            related_to_picture_id=related_to_picture_id,
+            related_to_email=related_to_email,
+            related_to_company=related_to_company,
+            assign_to=assign_to,
+            assign_to_email=assign_to_email,
+            assign_to_picture_id=assign_to_picture_id,
+            assign_to_company=assign_to_company,
+            notes=notes,
+            status=status,
+            attachment_id=attachment_id,
+            attachments=attachments,
+            link_response_id=link_response_id,
+            link_object_id=link_object_id,
+            created_by=created_by,
+        )
+        await History.create(
+            task_id=task_activity.task_id,
+            action=HistoryActionType.CREATE,
+            description=f"Task {task_activity.task_id} was created by user",
+        )
+        return CreateTaskResponse(success=True, message="Record added successfully", data=task_activity.to_model())
+    except Exception:
+        return CreateTaskResponse(success=False, message="Failed to add record")
 
 
 @app.get("/task-activity", response_model=List[TasksActivityModel])
 async def read_task_activity(
     from_end: Optional[bool] = False,
     limit: Optional[int] = None,
-    offset: Optional[int] = None
+    offset: Optional[int] = None,
 ):
     awaitable = TasksActivity.all()
     if from_end:
-        awaitable=awaitable.order_by('-id')
+        awaitable = awaitable.order_by("-id")
     if isinstance(offset, int):
         awaitable = awaitable.offset(offset)
     if not (limit is None):
-        awaitable=awaitable.limit(limit)
-    return [
-        history.to_model() for history in await awaitable
-    ]
-
-    return [task.to_model() for task in tasks]
+        awaitable = awaitable.limit(limit)
+    return [history.to_model() for history in await awaitable]
 
 
 @app.put("/task-activity")
@@ -194,9 +206,9 @@ async def update_task_activity(
         await History.create(
             task_id=task_id,
             action=HistoryActionType.UPDATE,
-            description=f"Task {task_id} was updated"
+            description=f"Task {task_id} was updated",
         )
-    return UpdateStatus(success=bool(updated))
+    return UpdateStatus(success=bool(updated), message='Task Updated Succesfully' if updated else 'Task Not Found')
 
 
 @app.delete("/task-activity")
@@ -206,35 +218,34 @@ async def delete_task_activity(task_id: Annotated[int, Form()]):
         await History.create(
             task_id=task_id,
             action=HistoryActionType.DELETE,
-            description=f"Task {task_id} was deleted by user"
+            description=f"Task {task_id} was deleted by user",
         )
-    return DeleteStatus(success=bool(deleted))
+    return DeleteStatus(success=bool(deleted), message='Task deleted succesfully' if deleted else 'Task Not Found')
 
 
 @app.get("/histories", response_model=List[HistoryModel])
 async def histories(
     from_end: Optional[bool] = False,
     limit: Optional[int] = None,
-    offset: Optional[int] = None
+    offset: Optional[int] = None,
 ):
     awaitable = History.all()
     if from_end:
-        awaitable=awaitable.order_by('-id')
+        awaitable = awaitable.order_by("-id")
     if isinstance(offset, int):
         awaitable = awaitable.offset(offset)
     if not (limit is None):
-        awaitable=awaitable.limit(limit)
-    return [
-        history.to_model() for history in await awaitable
-    ]
+        awaitable = awaitable.limit(limit)
+    return [history.to_model() for history in await awaitable]
+
 
 @app.post("/webhook", response_model=UpdateWebhookStatus)
 async def update_task_activity_webhook(request: Request):
     try:
         payload = await request.json()
-        task_id = payload.pop('task_id')
+        task_id = payload.pop("task_id")
         if isinstance(task_id, int):
-            task_activity_keys = set(TasksActivity._meta.fields_map) - {'id'}
+            task_activity_keys = set(TasksActivity._meta.fields_map) - {"id"}
             intersection = set(payload) & task_activity_keys
             update_data = {key: payload[key] for key in intersection}
             status = await TasksActivity.filter(task_id=task_id).update(**update_data)
@@ -242,12 +253,12 @@ async def update_task_activity_webhook(request: Request):
                 await History.create(
                     task_id=task_id,
                     action=HistoryActionType.UPDATE,
-                    description=f"Task {task_id} was updated: {', '.join(intersection)} were modified."
+                    description=f"Task {task_id} was updated: {', '.join(intersection)} were modified.",
                 )
-            return UpdateWebhookStatus(success=bool(status))
-        return UpdateWebhookStatus(success=False)
+            return UpdateWebhookStatus(success=bool(status), message='task updated successfully' if status else 'Task Not Found')
+        return UpdateWebhookStatus(success=False, message='Task Not Found')
     except Exception:
-        return UpdateWebhookStatus(success=False)
+        return UpdateWebhookStatus(success=False, message='Task Not Found')
 
 
 async def Initialize():

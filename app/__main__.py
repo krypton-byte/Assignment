@@ -3,11 +3,13 @@ import uvicorn
 from pathlib import Path
 import argparse
 from .models.db_task import Initialize
+
 args = argparse.ArgumentParser()
 action = args.add_subparsers(title="action", dest="action", required=True)
 action.add_parser("run")
 action.add_parser("migrate")
 parse = args.parse_args()
+
 
 def start():
     uvicorn.run(
