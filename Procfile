@@ -1,0 +1,1 @@
+web: python -m app migrate && python -m app run 

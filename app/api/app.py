@@ -22,7 +22,7 @@ from ..models.db_task import History, TasksActivity
 app = FastAPI()
 
 
-@app.route("/")
+@app.get("/")
 async def home():
     return "Hello World"
 
@@ -103,11 +103,21 @@ async def create_task_activity(
 
 
 @app.get("/task-activity", response_model=List[TasksActivityModel])
-async def read_task_activity(task_id: Optional[int] = None):
-    if task_id is None:
-        tasks = await TasksActivity.all()
-    else:
-        tasks = await TasksActivity.filter(task_id=task_id).all()
+async def read_task_activity(
+    from_end: Optional[bool] = False,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None
+):
+    awaitable = TasksActivity.all()
+    if from_end:
+        awaitable=awaitable.order_by('-id')
+    if isinstance(offset, int):
+        awaitable = awaitable.offset(offset)
+    if not (limit is None):
+        awaitable=awaitable.limit(limit)
+    return [
+        history.to_model() for history in await awaitable
+    ]
 
     return [task.to_model() for task in tasks]
 
@@ -205,10 +215,13 @@ async def delete_task_activity(task_id: Annotated[int, Form()]):
 async def histories(
     from_end: Optional[bool] = False,
     limit: Optional[int] = None,
+    offset: Optional[int] = None
 ):
     awaitable = History.all()
     if from_end:
         awaitable=awaitable.order_by('-id')
+    if isinstance(offset, int):
+        awaitable = awaitable.offset(offset)
     if not (limit is None):
         awaitable=awaitable.limit(limit)
     return [
@@ -217,13 +230,13 @@ async def histories(
 
 @app.post("/webhook", response_model=UpdateWebhookStatus)
 async def update_task_activity_webhook(request: Request):
-    payload = await request.json()
-    task_id = payload.pop('task_id')
-    if isinstance(task_id, int):
-        task_activity_keys = set(TasksActivity._meta.fields_map) - {'id'}
-        intersection = set(payload) & task_activity_keys
-        update_data = {key: payload[key] for key in intersection}
-        try:
+    try:
+        payload = await request.json()
+        task_id = payload.pop('task_id')
+        if isinstance(task_id, int):
+            task_activity_keys = set(TasksActivity._meta.fields_map) - {'id'}
+            intersection = set(payload) & task_activity_keys
+            update_data = {key: payload[key] for key in intersection}
             status = await TasksActivity.filter(task_id=task_id).update(**update_data)
             if status:
                 await History.create(
@@ -232,9 +245,9 @@ async def update_task_activity_webhook(request: Request):
                     description=f"Task {task_id} was updated: {', '.join(intersection)} were modified."
                 )
             return UpdateWebhookStatus(success=bool(status))
-        except Exception:
-            return UpdateWebhookStatus(success=False)
-    return UpdateWebhookStatus(success=False)
+        return UpdateWebhookStatus(success=False)
+    except Exception:
+        return UpdateWebhookStatus(success=False)
 
 
 async def Initialize():
