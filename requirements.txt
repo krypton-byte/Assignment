@@ -1,7 +1,6 @@
 aiosqlite==0.17.0
 annotated-types==0.7.0
 anyio==4.4.0
--e git+ssh://git@github.com/krypton-byte/Assignment.git@c71806aa59d756865dc30bb695f26919a24f387f#egg=app
 click==8.1.7
 fastapi==0.112.1
 h11==0.14.0
