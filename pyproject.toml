@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "app"
+version = "0.1.0"
+description = ""
+authors = ["krypton-byte <rosid6434@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.112.1"
+tortoise-orm = "^0.21.5"
+uvicorn = "^0.30.6"
+
+
+python-multipart = "^0.0.9"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+app = "app.__main__:start"
+migrate = "app.models.db_task:Initialize"
