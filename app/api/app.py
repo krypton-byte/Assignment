@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from typing import Annotated, List, Optional
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, Request
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
-from app.api.responses import DeleteStatus, UpdateStatus
+from app.api.responses import DeleteStatus, UpdateStatus, UpdateWebhookStatus
 
 from ..models.task import HistoryModel, TasksActivityModel
 from ..models.enum import (
@@ -97,6 +97,7 @@ async def create_task_activity(
     await History.create(
         task_id=task_activity.task_id,
         action=HistoryActionType.CREATE,
+        description=f"Task {task_activity.task_id} was created by user"
     )
     return task_activity.to_model()
 
@@ -182,7 +183,8 @@ async def update_task_activity(
     if updated:
         await History.create(
             task_id=task_id,
-            action=HistoryActionType.UPDATE
+            action=HistoryActionType.UPDATE,
+            description=f"Task {task_id} was updated"
         )
     return UpdateStatus(success=bool(updated))
 
@@ -193,7 +195,8 @@ async def delete_task_activity(task_id: Annotated[int, Form()]):
     if deleted:
         await History.create(
             task_id=task_id,
-            action=HistoryActionType.DELETE
+            action=HistoryActionType.DELETE,
+            description=f"Task {task_id} was deleted by user"
         )
     return DeleteStatus(success=bool(deleted))
 
@@ -212,6 +215,26 @@ async def histories(
         history.to_model() for history in await awaitable
     ]
 
+@app.post("/webhook", response_model=UpdateWebhookStatus)
+async def update_task_activity_webhook(request: Request):
+    payload = await request.json()
+    task_id = payload.pop('task_id')
+    if isinstance(task_id, int):
+        task_activity_keys = set(TasksActivity._meta.fields_map) - {'id'}
+        intersection = set(payload) & task_activity_keys
+        update_data = {key: payload[key] for key in intersection}
+        try:
+            status = await TasksActivity.filter(task_id=task_id).update(**update_data)
+            if status:
+                await History.create(
+                    task_id=task_id,
+                    action=HistoryActionType.UPDATE,
+                    description=f"Task {task_id} was updated: {', '.join(intersection)} were modified."
+                )
+            return UpdateWebhookStatus(success=bool(status))
+        except Exception:
+            return UpdateWebhookStatus(success=False)
+    return UpdateWebhookStatus(success=False)
 
 
 async def Initialize():

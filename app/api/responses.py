@@ -11,3 +11,6 @@ class UpdateStatus(Status):
 
 class DeleteStatus(Status):
     pass
+
+class UpdateWebhookStatus(Status):
+    pass

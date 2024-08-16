@@ -1,0 +1,19 @@
+aiosqlite==0.17.0
+annotated-types==0.7.0
+anyio==4.4.0
+-e git+ssh://git@github.com/krypton-byte/Assignment.git@c71806aa59d756865dc30bb695f26919a24f387f#egg=app
+click==8.1.7
+fastapi==0.112.1
+h11==0.14.0
+idna==3.7
+iso8601==1.1.0
+pydantic==2.8.2
+pydantic_core==2.20.1
+pypika-tortoise==0.1.6
+python-multipart==0.0.9
+pytz==2024.1
+sniffio==1.3.1
+starlette==0.38.2
+tortoise-orm==0.21.5
+typing_extensions==4.12.2
+uvicorn==0.30.6

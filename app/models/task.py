@@ -53,3 +53,4 @@ class HistoryModel(BaseModel):
     task_id: int = Field()
     action: HistoryActionType = Field()
     time: datetime = Field()
+    description: str = Field()

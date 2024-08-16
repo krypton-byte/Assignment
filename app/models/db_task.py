@@ -90,13 +90,15 @@ class History(Model):
     id = fields.IntField(primary_key=True)
     task_id = fields.IntField()
     action = fields.CharEnumField(HistoryActionType)
+    description = fields.TextField()
     time = fields.DatetimeField(auto_now=True)
     def to_model(self):
         return HistoryModel(
             id=self.id,
             task_id=self.task_id,
             action=self.action,
-            time=self.time
+            time=self.time,
+            description=self.description
         )
 
 async def InitializeDB():
