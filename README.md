@@ -15,8 +15,8 @@ To get started with the project, follow the steps below:
 
 1. **Clone the repository**:
    ```bash
-   git clone <your-repo-url>
-   cd <your-repo-directory>
+   git clone git@github.com:krypton-byte/Assignment.git
+   cd Assignment
    ```
 
 2. **Install dependencies using Poetry**:
