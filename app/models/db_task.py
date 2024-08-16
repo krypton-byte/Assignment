@@ -66,7 +66,7 @@ class TasksActivity(Model):
 
         :return: Converted TasksActivityModel instance
         :rtype: TasksActivityModel
-        """    
+        """
         return TasksActivityModel(
             task_id=self.task_id,
             task_name=self.task_name,
@@ -104,7 +104,7 @@ class TasksActivity(Model):
         )
 
 
-class History(Model):    
+class History(Model):
     class Meta:  # type: ignore
         table = "History"
 
@@ -113,6 +113,7 @@ class History(Model):
     action = fields.CharEnumField(HistoryActionType)
     description = fields.TextField()
     time = fields.DatetimeField(auto_now=True)
+
     def to_model(self) -> HistoryModel:
         """Converts History instance to HistoryModel.
 
