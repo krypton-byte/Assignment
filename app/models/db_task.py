@@ -4,11 +4,12 @@ from .enum import (
     ActivityName,
     GroupCategory,
     GroupName,
+    HistoryActionType,
     StageName,
     SubCategoryName,
     Status,
 )
-from .task import TasksActivityModel
+from .task import HistoryModel, TasksActivityModel
 # from tortoise.fields.data import CharEnumType
 
 
@@ -47,7 +48,7 @@ class TasksActivity(Model):
     created_by = fields.CharField(max_length=255)
     created_on = fields.DatetimeField(auto_now=True)
 
-    def to_models(self):
+    def to_model(self):
         return TasksActivityModel(
             task_id=self.task_id,
             task_name=self.task_name,
@@ -84,6 +85,19 @@ class TasksActivity(Model):
             created_on=self.created_on,
         )
 
+
+class History(Model):
+    id = fields.IntField(primary_key=True)
+    task_id = fields.IntField()
+    action = fields.CharEnumField(HistoryActionType)
+    time = fields.DatetimeField(auto_now=True)
+    def to_model(self):
+        return HistoryModel(
+            id=self.id,
+            task_id=self.task_id,
+            action=self.action,
+            time=self.time
+        )
 
 async def InitializeDB():
     await Tortoise.init(

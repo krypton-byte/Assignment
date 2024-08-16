@@ -51,3 +51,9 @@ class Status(Enum):
     COMPLETED = "completed"
     WAITING_ON = "waiting on"
     DIFFERED = "differed"
+
+
+class HistoryActionType(Enum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"

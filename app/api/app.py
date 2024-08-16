@@ -6,8 +6,9 @@ from tortoise.contrib.fastapi import register_tortoise
 
 from app.api.responses import DeleteStatus, UpdateStatus
 
-from ..models.task import TasksActivityModel
+from ..models.task import HistoryModel, TasksActivityModel
 from ..models.enum import (
+    HistoryActionType,
     ActivityName,
     GroupCategory,
     GroupName,
@@ -15,7 +16,7 @@ from ..models.enum import (
     Status,
     SubCategoryName,
 )
-from ..models.db_task import TasksActivity
+from ..models.db_task import History, TasksActivity
 
 
 app = FastAPI()
@@ -60,7 +61,7 @@ async def create_task_activity(
     link_object_id: Annotated[int, Form()],
     created_by: Annotated[str, Form()],
 ):
-    result = await TasksActivity.create(
+    task_activity = await TasksActivity.create(
         task_name=task_name,
         task_description=task_description,
         activity_type_id=activity_type_id,
@@ -93,7 +94,11 @@ async def create_task_activity(
         link_object_id=link_object_id,
         created_by=created_by,
     )
-    return result.to_models()
+    await History.create(
+        task_id=task_activity.task_id,
+        action=HistoryActionType.CREATE,
+    )
+    return task_activity.to_model()
 
 
 @app.get("/task-activity", response_model=List[TasksActivityModel])
@@ -103,7 +108,7 @@ async def read_task_activity(task_id: Optional[int] = None):
     else:
         tasks = await TasksActivity.filter(task_id=task_id).all()
 
-    return [task.to_models() for task in tasks]
+    return [task.to_model() for task in tasks]
 
 
 @app.put("/task-activity")
@@ -174,13 +179,39 @@ async def update_task_activity(
         link_object_id=link_object_id,
         created_by=created_by,
     )
+    if updated:
+        await History.create(
+            task_id=task_id,
+            action=HistoryActionType.UPDATE
+        )
     return UpdateStatus(success=bool(updated))
 
 
 @app.delete("/task-activity")
 async def delete_task_activity(task_id: Annotated[int, Form()]):
     deleted = TasksActivity.filter(task_id=task_id).delete()
+    if deleted:
+        await History.create(
+            task_id=task_id,
+            action=HistoryActionType.DELETE
+        )
     return DeleteStatus(success=bool(deleted))
+
+
+@app.get("/histories", response_model=List[HistoryModel])
+async def histories(
+    from_end: Optional[bool] = False,
+    limit: Optional[int] = None,
+):
+    awaitable = History.all()
+    if from_end:
+        awaitable=awaitable.order_by('-id')
+    if not (limit is None):
+        awaitable=awaitable.limit(limit)
+    return [
+        history.to_model() for history in await awaitable
+    ]
+
 
 
 async def Initialize():

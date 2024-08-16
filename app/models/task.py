@@ -5,6 +5,7 @@ from .enum import (
     ActivityName,
     GroupCategory,
     GroupName,
+    HistoryActionType,
     StageName,
     SubCategoryName,
     Status,
@@ -45,3 +46,10 @@ class TasksActivityModel(BaseModel):
     link_object_id: int = Field()
     created_by: str = Field()
     created_on: datetime = Field()
+
+
+class HistoryModel(BaseModel):
+    id: int = Field()
+    task_id: int = Field()
+    action: HistoryActionType = Field()
+    time: datetime = Field()
