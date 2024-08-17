@@ -1,1 +1,1 @@
-web: python -m app migrate && python -m app run 
+web: python -m app migrate && python -m app serve
