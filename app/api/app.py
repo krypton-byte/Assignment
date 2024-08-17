@@ -28,8 +28,7 @@ from ..models.db_task import History, TasksActivity
 from ..const import HOST, PORT
 import httpx
 
-app = FastAPI()
-
+app = FastAPI(title="TasksActivity API")
 
 @app.route("/")
 async def home(_: Request):
@@ -142,7 +141,7 @@ async def read_task_activity(
     """Fetches a list of task activities from the database."""
     awaitable = TasksActivity.all()
     if from_end:
-        awaitable = awaitable.order_by("-id")
+        awaitable = awaitable.order_by("-task_id")
     if isinstance(offset, int):
         awaitable = awaitable.offset(offset)
     if not (limit is None):
