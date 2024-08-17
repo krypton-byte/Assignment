@@ -3,8 +3,6 @@ import os
 from typing import Annotated, List, Optional
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
-from pypika.terms import json
-from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
 from app.api.body import TasksActivityBody
@@ -287,14 +285,15 @@ async def update_task_activity_webhook(request: Request):
                 {key: payload[key] for key in intersection}
                 | {i: None for i in key_with_default_value}
             )
+            payload_kwargs = update_data.model_dump(exclude={"task_id"}, exclude_none=True)
             status = await TasksActivity.filter(task_id=task_id).update(
-                **update_data.model_dump(exclude={"task_id"}, exclude_none=True)
+                **payload_kwargs
             )
             if status:
                 await History.create(
                     task_id=task_id,
                     action=HistoryActionType.UPDATE,
-                    description=f"Task {task_id} was updated: {', '.join(intersection)} were modified.",
+                    description=f"Task {task_id} was updated: {', '.join(payload_kwargs)} were modified.",
                 )
             return UpdateWebhookStatus(
                 success=bool(status),

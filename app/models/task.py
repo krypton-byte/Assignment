@@ -1,4 +1,3 @@
-from dataclasses import field
 from pydantic import BaseModel, Field
 from datetime import date, datetime
 from .enum import (

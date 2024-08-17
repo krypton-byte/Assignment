@@ -53,6 +53,9 @@ python -m app serve
 -d '{"task_id":1, "task_name": "new task name", "action_type": "test action", "dummy": "hello world"}'
 
 ```
+## Models
+![models](assets/models.svg)
+
 ## Additional Information
 
 - Make sure to configure your database settings appropriately in the project before running migrations.

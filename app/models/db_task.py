@@ -16,7 +16,7 @@ class TasksActivity(Model):
         table = "TasksActivity"
 
     task_id = fields.IntField(primary_key=True, source_field="TaskID")
-    task_name = fields.TextField(source_field="task_name")
+    task_name = fields.TextField(source_field="TaskName")
     task_description = fields.TextField(source_field="TaskDescription")
     activity_type_id = fields.IntField(source_field="ActivityTypeID")
     activity_type_name = fields.CharEnumField(
