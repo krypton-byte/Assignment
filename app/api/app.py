@@ -1,10 +1,13 @@
 from datetime import date
+import os
 from typing import Annotated, List, Optional
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
+from pypika.terms import json
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
+from app.api.body import TasksActivityBody
 from app.api.responses import (
     CreateTaskResponse,
     DeleteStatus,
@@ -24,22 +27,21 @@ from ..models.enum import (
     SubCategoryName,
 )
 from ..models.db_task import History, TasksActivity
-
+from ..const import HOST, PORT
+import httpx
 
 app = FastAPI()
 
 
 @app.route("/")
 async def home(_: Request):
-    """Redirects the root URL to the API documentation.
-    """
+    """Redirects the root URL to the API documentation."""
     return RedirectResponse("/docs")
 
 
 @app.get("/task/{task_id}", response_model=TaskResponse)
 async def get_task(task_id: int):
-    """Fetches a task by its ID and returns the task details.
-    """
+    """Fetches a task by its ID and returns the task details."""
     task = await TasksActivity.filter(task_id=task_id).first()
     if task:
         return TaskResponse(
@@ -82,9 +84,7 @@ async def create_task_activity(
     link_object_id: Annotated[int, Form()],
     created_by: Annotated[str, Form()],
 ):
-    """Creates a new task activity and records it in the database.
-
-    """
+    """Creates a new task activity and records it in the database."""
     try:
         task_activity = await TasksActivity.create(
             task_name=task_name,
@@ -130,7 +130,9 @@ async def create_task_activity(
             data=task_activity.to_model(),
         )
     except Exception as e:
-        return CreateTaskResponse(success=False, message=" ".join(e.args))
+        return CreateTaskResponse(
+            success=False, message=" ".join(i.__str__() for i in e.args)
+        )
 
 
 @app.get("/task-activity", response_model=List[TasksActivityModel])
@@ -139,8 +141,7 @@ async def read_task_activity(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
 ):
-    """Fetches a list of task activities from the database.
-    """
+    """Fetches a list of task activities from the database."""
     awaitable = TasksActivity.all()
     if from_end:
         awaitable = awaitable.order_by("-id")
@@ -186,8 +187,7 @@ async def update_task_activity(
     link_object_id: Annotated[int, Form()],
     created_by: Annotated[str, Form()],
 ):
-    """Updates an existing task activity in the database.
-    """
+    """Updates an existing task activity in the database."""
     updated = await TasksActivity.filter(task_id=task_id).update(
         task_name=task_name,
         task_description=task_description,
@@ -235,8 +235,7 @@ async def update_task_activity(
 
 @app.delete("/task-activity")
 async def delete_task_activity(task_id: Annotated[int, Form()]):
-    """Deletes a task activity from the database.
-    """
+    """Deletes a task activity from the database."""
     deleted = await TasksActivity.filter(task_id=task_id).delete()
     if deleted:
         await History.create(
@@ -256,8 +255,7 @@ async def histories(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
 ):
-    """Fetches a list of history records from the database.
-    """
+    """Fetches a list of history records from the database."""
     awaitable = History.all()
     if from_end:
         awaitable = awaitable.order_by("-id")
@@ -270,19 +268,28 @@ async def histories(
 
 @app.post("/webhook", response_model=UpdateWebhookStatus)
 async def update_task_activity_webhook(request: Request):
-    """Endpoint to handle webhook updates for task activities.
+    """Handle incoming webhook data to update a task activity.
 
-    This endpoint expects a JSON payload containing at least a 'task_id' field,
-    and other fields representing updated data for the task activity.
-    """
+    This function processes a JSON payload received via a POST request.
+    The payload is expected to contain fields related to a `TaskActivity`.
+    If the payload includes fields that do not correspond to `TaskActivity`, 
+    they will be ignored. The function ensures data type validation, 
+    and returns an error if the data types are incorrect.
+    """    
     try:
         payload = await request.json()
-        task_id = payload.pop("task_id")
+        task_id = payload.get("task_id")
         if isinstance(task_id, int):
-            task_activity_keys = set(TasksActivity._meta.fields_map) - {"task_id"}
+            task_activity_keys = set(TasksActivityBody.model_fields.keys())
             intersection = set(payload) & task_activity_keys
-            update_data = {key: payload[key] for key in intersection}
-            status = await TasksActivity.filter(task_id=task_id).update(**update_data)
+            key_with_default_value = task_activity_keys - intersection
+            update_data = TasksActivityBody.model_validate(
+                {key: payload[key] for key in intersection}
+                | {i: None for i in key_with_default_value}
+            )
+            status = await TasksActivity.filter(task_id=task_id).update(
+                **update_data.model_dump(exclude={"task_id"}, exclude_none=True)
+            )
             if status:
                 await History.create(
                     task_id=task_id,
@@ -295,7 +302,24 @@ async def update_task_activity_webhook(request: Request):
             )
         return UpdateWebhookStatus(success=False, message="Task Not Found")
     except Exception as e:
-        return UpdateWebhookStatus(success=False, message=' '.join(e.args))
+        return UpdateWebhookStatus(
+            success=False,
+            message=f"{e.__class__}:" + f" ".join(i.__str__() for i in e.args),
+        )
+
+
+@app.post("/webhook-playground", response_model=UpdateWebhookStatus)
+async def webhook_playground(body: TasksActivityBody):
+    """Simulate sending a webhook request to update task activity.
+
+    This function accepts a `TasksActivityBody` object, converts it to JSON format, 
+    and sends it as a POST request to an external webhook endpoint. The response 
+    from the external endpoint is then returned as an instance of `UpdateWebhookStatus`.
+    """    
+    async with httpx.AsyncClient() as client:
+        json_payload = body.model_dump(exclude_none=True, mode="json")
+        response = await client.post(f"http://{HOST}:{PORT}/webhook", json=json_payload)
+        return UpdateWebhookStatus(**response.json())
 
 
 register_tortoise(

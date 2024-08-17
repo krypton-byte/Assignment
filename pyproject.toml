@@ -13,10 +13,11 @@ uvicorn = "^0.30.6"
 
 
 python-multipart = "^0.0.9"
+httpx = "^0.27.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-app = "app.__main__:start"
+app = "app.cli:start"
 migrate = "app.models.db_task:Initialize"

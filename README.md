@@ -43,7 +43,7 @@ To start the application, use the following command:
 ```bash
 poetry run app
 #or
-python -m app run
+python -m app serve
 ```
 
 ## Proper Example HTTP Request to webhook
